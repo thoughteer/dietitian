@@ -9,7 +9,7 @@ Node = collections.namedtuple("Node", ["head", "tail"])
 
 class Tensor:
 
-    def __init__(self, shape, default=math.inf):
+    def __init__(self, shape, default=-math.inf):
         self.shape = shape
         self.data = [default] * math.prod(shape)
 
@@ -32,6 +32,7 @@ def run(args):
     scores = Tensor((args.protein.high, args.fat.high, args.carbohydrate.high))
     scores[0, 0, 0] = 0
     nodes = {}
+    nodes[(0, 0, 0)] = None
     for p in range(args.protein.high):
         for f in range(args.fat.high):
             for c in range(args.carbohydrate.high):
@@ -39,12 +40,14 @@ def run(args):
                     p_, f_, c_ = p - item.protein, f - item.fat, c - item.carbohydrate
                     if p_ < 0 or f_ < 0 or c_ < 0:
                         continue
-                    score = scores[p_, f_, c_]
+                    if (p_, f_, c_) not in nodes:
+                        continue
+                    score = scores[p_, f_, c_] + item.score
                     if score > scores[p, f, c]:
                         scores[p, f, c] = score
                         nodes[(p, f, c)] = Node(item.index, nodes.get((p_, f_, c_)))
     solution = None
-    score = math.inf
+    score = -math.inf
     for p in range(args.protein.low, args.protein.high):
         for f in range(args.fat.low, args.fat.high):
             for c in range(args.carbohydrate.low, args.carbohydrate.high):
@@ -83,5 +86,9 @@ def unroll(node, items):
 
 
 def report(solution, menu):
+    print("Protein: %dg" % solution[0])
+    print("Fat: %dg" % solution[1])
+    print("Carbohydrate: %dg" % solution[2])
+    print("")
     for name in sorted(menu):
         print(name, "x%d" % menu[name])
